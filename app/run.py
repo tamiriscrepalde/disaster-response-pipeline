@@ -7,10 +7,9 @@ from nltk.tokenize import word_tokenize
 
 from flask import Flask
 from flask import render_template, request, jsonify
-from plotly.graph_objs import Bar
+from plotly.graph_objs import Bar, Box, Pie
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
-
 
 app = Flask(__name__)
 
@@ -26,11 +25,11 @@ def tokenize(text):
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('data/DisasterResponse.db', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
@@ -39,13 +38,58 @@ model = joblib.load("../models/your_model_name.pkl")
 def index():
     
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
+    df.loc[df.related == 2, 'related'] = 0
+    df_related = df.copy()
+    df_related.loc[df_related.related == 0, 'related'] = 'not related'
+    df_related.loc[df_related.related == 1, 'related'] = 'related'
+    related_counts = df_related.groupby(['related']).count()['message']
+    related_names = list(related_counts.index)
+    
+    categories_counts = df.iloc[:,5:].sum().sort_values(ascending=False)
+    categories_names = list(df.iloc[:,5:].columns)
+    
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
     
-    # create visuals
-    # TODO: Below is an example - modify to create your own visuals
+    # visuals
+    # https://plotly.com/python/reference/pie/
     graphs = [
+        {
+            'data': [
+                Pie(
+                    values=related_counts,
+                    labels=related_names,
+                    textinfo="label+percent",
+                    textposition="outside",
+                    hole=.3
+                )
+            ],
+
+            'layout': {
+                'title': 'Messages Related to Disasters or Not',
+                'showlegend': False,
+                'automargin': True,
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=categories_names,
+                    y=categories_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Message Categories',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Category",
+                    'tickangle': 35
+                }
+            }
+        },
         {
             'data': [
                 Bar(
