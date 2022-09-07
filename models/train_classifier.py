@@ -11,6 +11,8 @@ from sqlalchemy import create_engine
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
+import nltk
+nltk.download(['punkt', 'wordnet', 'stopwords'])
 
 # modeling
 from sklearn.pipeline import Pipeline
