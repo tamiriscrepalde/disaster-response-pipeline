@@ -12,7 +12,7 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 import nltk
-nltk.download(['punkt', 'wordnet', 'stopwords'])
+nltk.download(['punkt', 'wordnet', 'stopwords', 'omw-1.4'])
 
 # modeling
 from sklearn.pipeline import Pipeline
