@@ -38,7 +38,6 @@ model = joblib.load("../models/classifier.pkl")
 def index():
     
     # extract data needed for visuals
-    df.loc[df.related == 2, 'related'] = 0
     df_related = df.copy()
     df_related.loc[df_related.related == 0, 'related'] = 'not related'
     df_related.loc[df_related.related == 1, 'related'] = 'related'

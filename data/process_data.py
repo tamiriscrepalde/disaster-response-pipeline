@@ -68,6 +68,7 @@ def make_categories_dummies(categories:pd.DataFrame) -> pd.DataFrame:
     for column in categories:
         categories[column] = categories[column].apply(lambda x: x.split('-')[1])
         categories[column] = categories[column].astype(int)
+        categories.loc[categories.related == 2, 'related'] = 0
 
     return categories
 
