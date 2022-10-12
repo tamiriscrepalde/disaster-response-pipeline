@@ -1,4 +1,3 @@
-import os
 import json
 import plotly
 import pandas as pd
@@ -27,7 +26,7 @@ def tokenize(text):
 
 # load data
 engine = create_engine('sqlite:///../data/DisasterResponse.db')
-df = pd.read_sql_table(os.path.join(os.getcwd(), 'data/DisasterResponse.db', engine)
+df = pd.read_sql_table('data/DisasterResponse.db', engine)
 
 # load model
 model = joblib.load("../models/classifier.pkl")
