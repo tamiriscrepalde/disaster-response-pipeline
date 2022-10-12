@@ -95,7 +95,7 @@ def save_data(df:pd.DataFrame, database_filename:str) -> None:
         database_filename (pd.DataFrame): Filepath of the database.
     """
     engine = create_engine(f'sqlite:///{database_filename}')
-    df.to_sql(database_filename, engine, index=False)
+    df.to_sql(database_filename, engine, index=False, if_exists='replace')
 
 
 def main() -> None:

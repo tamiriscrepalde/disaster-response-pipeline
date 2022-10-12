@@ -1,3 +1,4 @@
+import os
 import json
 import plotly
 import pandas as pd
@@ -26,7 +27,7 @@ def tokenize(text):
 
 # load data
 engine = create_engine('sqlite:///../data/DisasterResponse.db')
-df = pd.read_sql_table('data/DisasterResponse.db', engine)
+df = pd.read_sql_table(os.path.join(os.getcwd(), 'data/DisasterResponse.db', engine)
 
 # load model
 model = joblib.load("../models/classifier.pkl")
@@ -36,20 +37,20 @@ model = joblib.load("../models/classifier.pkl")
 @app.route('/')
 @app.route('/index')
 def index():
-    
+
     # extract data needed for visuals
     df_related = df.copy()
     df_related.loc[df_related.related == 0, 'related'] = 'not related'
     df_related.loc[df_related.related == 1, 'related'] = 'related'
     related_counts = df_related.groupby(['related']).count()['message']
     related_names = list(related_counts.index)
-    
+
     categories_counts = df.iloc[:,5:].sum().sort_values(ascending=False)
     categories_names = list(df.iloc[:,5:].columns)
-    
+
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
-    
+
     # visuals
     # https://plotly.com/python/reference/pie/
     graphs = [
@@ -108,11 +109,11 @@ def index():
             }
         }
     ]
-    
+
     # encode plotly graphs in JSON
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
-    
+
     # render web page with plotly graphs
     return render_template('master.html', ids=ids, graphJSON=graphJSON)
 
@@ -121,13 +122,13 @@ def index():
 @app.route('/go')
 def go():
     # save user input in query
-    query = request.args.get('query', '') 
+    query = request.args.get('query', '')
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
     classification_results = dict(zip(df.columns[4:], classification_labels))
 
-    # This will render the go.html Please see that file. 
+    # This will render the go.html Please see that file.
     return render_template(
         'go.html',
         query=query,

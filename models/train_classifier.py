@@ -1,30 +1,32 @@
-import sys
-import re
 import pickle
+import re
+import sys
+
+import nltk
 import numpy as np
 import pandas as pd
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+# pre processing
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 # database
 from sqlalchemy import create_engine
 
-# pre processing
-from nltk.tokenize import word_tokenize, sent_tokenize
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import stopwords
-import nltk
-nltk.download(['punkt', 'wordnet', 'stopwords', 'omw-1.4'])
+nltk.download(["punkt", "wordnet", "stopwords", "omw-1.4"])
 
 # modeling
 from sklearn.base import ClassifierMixin
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from sklearn.multioutput import MultiOutputClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.pipeline import Pipeline
 
 
-def load_data(database_filepath:str) -> tuple:
+def load_data(database_filepath: str) -> tuple:
     """Reads data from database.
 
     Args:
@@ -35,16 +37,17 @@ def load_data(database_filepath:str) -> tuple:
         Y (np.ndarray): Labels for the model.
         category_names: Category names list.
     """
-    engine = create_engine(f'sqlite:///{database_filepath}')
+    engine = create_engine(f"sqlite:///{database_filepath}")
     df = pd.read_sql_table(database_filepath, engine)
-    category_names = df.iloc[:,4:].columns
+    category_names = df.iloc[:, 4:].columns
 
-    X = df[['message']]
-    Y = df.iloc[:,4:]
+    X = df[["message"]]
+    Y = df.iloc[:, 4:]
 
     return X.values.ravel(), Y.values, category_names
 
-def tokenize(text:str) -> list:
+
+def tokenize(text: str) -> list:
     """Tokenizes the input text.
 
     Args:
@@ -69,20 +72,26 @@ def tokenize(text:str) -> list:
 
 def build_model() -> Pipeline:
     """Builds a model pipeline."""
-    pipeline = Pipeline([
-        ('vect', CountVectorizer(tokenizer=tokenize)),
-        ('tfidf', TfidfTransformer()),
-        ('clf', MultiOutputClassifier(RandomForestClassifier()))
-        ])
+    pipeline = Pipeline(
+        [
+            ("vect", CountVectorizer(tokenizer=tokenize)),
+            ("tfidf", TfidfTransformer()),
+            ("clf", MultiOutputClassifier(RandomForestClassifier())),
+        ]
+    )
 
-    return pipeline
+    print("Tuning the hyperparameters...")
+    parameters = {
+        "vect__ngram_range": ((1, 1), (1, 2)),
+        "clf__estimator__criterion": ("gini", "entropy"),
+    }
+    tuned_pipeline = GridSearchCV(pipeline, param_grid=parameters, verbose=2)
+
+    return tuned_pipeline
 
 def evaluate_model(
-    model:Pipeline,
-    X_test:np.ndarray,
-    Y_test:np.ndarray,
-    category_names:str
-    ) -> None:
+    model: Pipeline, X_test: np.ndarray, Y_test: np.ndarray, category_names: str
+) -> None:
     """Evaluates the model.
 
     Args:
@@ -98,41 +107,46 @@ def evaluate_model(
         print(column)
         print(classification_report(Y_test[column], Y_pred[column]))
 
-def save_model(model:ClassifierMixin, model_filepath:str) -> None:
+
+def save_model(model: ClassifierMixin, model_filepath: str) -> None:
     """Saves model as pickle.
 
     Args:
         model (ClassifierMixin): Model pipeline to be saved.
         model_filepath (str): Model filepath.
     """
-    pickle.dump(model, open(model_filepath, 'wb'))
+    pickle.dump(model, open(model_filepath, "wb"))
+
 
 def main():
     if len(sys.argv) == 3:
         database_filepath, model_filepath = sys.argv[1:]
-        print(f'Loading data...\n    DATABASE: {database_filepath}')
+        print(f"Loading data...\n    DATABASE: {database_filepath}")
         X, Y, category_names = load_data(database_filepath)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
 
-        print('Building model...')
+        print("Building model...")
         model = build_model()
 
-        print('Training model...')
+        print("Training model...")
         model.fit(X_train, Y_train)
 
-        print('Evaluating model...')
+        print("Evaluating model...")
         evaluate_model(model, X_test, Y_test, category_names)
 
-        print(f'Saving model...\n    MODEL: {model_filepath}')
+        print(f"Saving model...\n    MODEL: {model_filepath}")
         save_model(model, model_filepath)
 
-        print('Trained model saved!')
+        print("Trained model saved!")
 
     else:
-        print('Please provide the filepath of the disaster messages database '\
-              'as the first argument and the filepath of the pickle file to '\
-              'save the model to as the second argument. \n\nExample: python '\
-              'train_classifier.py ../data/DisasterResponse.db classifier.pkl')
+        print(
+            "Please provide the filepath of the disaster messages database "
+            "as the first argument and the filepath of the pickle file to "
+            "save the model to as the second argument. \n\nExample: python "
+            "train_classifier.py ../data/DisasterResponse.db classifier.pkl"
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
